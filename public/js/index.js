@@ -108,9 +108,9 @@ function init() {
   camera.position.set(0, 3, 6);
   scene.add(camera);
 
-  // create an AudioListener and add it to the camera
-  listener = new THREE.AudioListener();
-  camera.add(listener);
+  // // create an AudioListener and add it to the camera
+  // listener = new THREE.AudioListener();
+  // camera.add(listener);
 
   //THREE WebGL renderer
   renderer = new THREE.WebGLRenderer({
@@ -162,42 +162,43 @@ function addLights() {
 
 // add a client meshes, a video element and  canvas for three.js video texture
 function addPeer(id) {
-  // let videoElement = document.getElementById(id + "_video");
-  // let videoTexture = new THREE.VideoTexture(videoElement);
-  //
-  // let videoMaterial = new THREE.MeshBasicMaterial({
-  //   map: videoTexture,
-  //   overdraw: true,
-  //   side: THREE.DoubleSide,
-  // });
-  let otherMat = new THREE.MeshNormalMaterial();
+    // let videoElement = document.getElementById(id + "_video");
+    // let videoTexture = new THREE.VideoTexture(videoElement);
+    //
+        // let videoMaterial = new THREE.MeshBasicMaterial({
+            //   map: videoTexture,
+            //   overdraw: true,
+            //   side: THREE.DoubleSide,
+            // });
+    let otherMat = new THREE.MeshNormalMaterial();
 
-  let head = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), [
-    otherMat,
-    otherMat,
-    otherMat,
-    otherMat,
-    otherMat,
-    otherMat,
-  ]);
+    let head = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), [
+        otherMat,
+        otherMat,
+        otherMat,
+        otherMat,
+        otherMat,
+        otherMat,
+    ]);
 
-  // set position of head before adding to parent object
-  head.position.set(0, 0, 0);
+    // set position of head before adding to parent object
+    head.position.set(0, 0, 0);
 
-  // https://threejs.org/docs/index.html#api/en/objects/Group
-  var group = new THREE.Group();
-  group.add(head);
+    // https://threejs.org/docs/index.html#api/en/objects/Group
+    var group = new THREE.Group();
+    group.add(head);
 
-  // add group to scene
-  scene.add(group);
+    // add group to scene
+    scene.add(group);
 
-  peers[id] = {};
-  peers[id].group = group;
+    peers[id] = {};
+    peers[id].group = group;
 
-  peers[id].previousPosition = new THREE.Vector3();
-  peers[id].previousRotation = new THREE.Quaternion();
-  peers[id].desiredPosition = new THREE.Vector3();
-  peers[id].desiredRotation = new THREE.Quaternion();
+    // partie pour lisser les mouvements des autres
+    peers[id].previousPosition = new THREE.Vector3();
+    peers[id].previousRotation = new THREE.Quaternion();
+    peers[id].desiredPosition = new THREE.Vector3();
+    peers[id].desiredRotation = new THREE.Quaternion();
 }
 
 function removePeer(id) {
@@ -238,24 +239,24 @@ function interpolatePositions() {
   }
 }
 
-function updatePeerVolumes() {
-  for (let id in peers) {
-    let audioEl = document.getElementById(id + "_audio");
-    if (audioEl && peers[id].group) {
-      let distSquared = camera.position.distanceToSquared(
-        peers[id].group.position
-      );
-
-      if (distSquared > 500) {
-        audioEl.volume = 0;
-      } else {
-        // from lucasio here: https://discourse.threejs.org/t/positionalaudio-setmediastreamsource-with-webrtc-question-not-hearing-any-sound/14301/29
-        let volume = Math.min(1, 10 / distSquared);
-        audioEl.volume = volume;
-      }
-    }
-  }
-}
+// function updatePeerVolumes() {
+//   for (let id in peers) {
+//     let audioEl = document.getElementById(id + "_audio");
+//     if (audioEl && peers[id].group) {
+//       let distSquared = camera.position.distanceToSquared(
+//         peers[id].group.position
+//       );
+//
+//       if (distSquared > 500) {
+//         audioEl.volume = 0;
+//       } else {
+//         // from lucasio here: https://discourse.threejs.org/t/positionalaudio-setmediastreamsource-with-webrtc-question-not-hearing-any-sound/14301/29
+//         let volume = Math.min(1, 10 / distSquared);
+//         audioEl.volume = volume;
+//       }
+//     }
+//   }
+// }
 
 //////////////////////////////////////////////////////////////////////
 // Interaction 🤾‍♀️
@@ -281,9 +282,9 @@ function update() {
   requestAnimationFrame(() => update());
   frameCount++;
 
-  if (frameCount % 25 === 0) {
-    updatePeerVolumes();
-  }
+  // if (frameCount % 25 === 0) {
+  //   updatePeerVolumes();
+  // }
 
   if (frameCount % 10 === 0) {
     let position = getPlayerPosition();
