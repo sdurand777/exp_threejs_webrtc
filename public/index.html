@@ -1,34 +1,24 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>three.js WebRTC template</title>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>gRPC-Web Example</title>
+    </head>
+    <body>
+        <h1>gRPC Web Client</h1>
+        <p>Open the developer console to see the output.</p>
 
-    <meta
-      name="viewport"
-      content="initial-scale=1,maximum-scale=1,user-scalable=no"
-    />
+        <!-- Webpack injecte automatiquement le fichier bundle.js ici -->
+        <div id="canvas-container"></div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="js/libs/simplepeer.min.js"></script>
-
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-        }
-      }
-    </script>
-    <script src="js/index.js" type="module"></script>
-
-    <style>
-      body {
-        overflow: hidden;
-      }
-    </style>
-  </head>
-
-  <body style="background: yellow; margin: 0; padding: 0">
-    <div id="canvas-container"></div>
-  </body>
+    </body>
 </html>
+
+
+
+
+
+
+
+

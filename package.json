@@ -1,20 +1,36 @@
 {
-  "name": "three.js-webrtc",
+  "name": "web_app",
   "version": "1.0.0",
-  "description": "Template for using three.js with socket.io and WebRTC",
-  "main": "server.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon --ignore ./public/ server.js --ignore ./mydatabase.json"
-  },
+  "main": "webpack.config.js",
+  "keywords": [],
   "author": "",
-  "license": "MIT",
+  "license": "ISC",
+  "description": "npm init -y npm install",
   "dependencies": {
-    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
     "nedb": "^1.8.0",
-    "socket.io": "^4.7.5"
+    "protoc-gen-js": "^3.21.4",
+    "simple-peer": "^9.11.0",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.8.1",
+    "three": "^0.172.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "@grpc/grpc-js": "~1.1.8",
+    "@grpc/proto-loader": "~0.5.4",
+    "async": "~3.2.3",
+    "google-protobuf": "~3.21.4",
+    "grpc-web": "~1.5.0",
+    "html-webpack-plugin": "^5.6.3",
+    "lodash": "~4.17.0",
+    "webpack": "^5.97.1",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.0"
+  },
+  "scripts": {
+    "start": "webpack-dev-server --open",
+    "build": "webpack --mode production",
+    "server": "node server.js"
   }
 }

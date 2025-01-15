@@ -1,20 +1,28 @@
-/*
- *
- * This is the server which runs all Websocket and WebRTC communications for our application.
- *
- */
 
-// Set up an express application to run the server
-const express = require("express");
+const express = require('express');
+const path = require('path');
+const cors = require('cors'); // Importer le middleware CORS
 const app = express();
 
-// tell our express application to serve the 'public' folder
-app.use(express.static("public"));
+// Activer les en-têtes CORS pour toutes les routes
+app.use(cors());
 
-// tell the server to listen on a given port
-const port = process.env.PORT || 8080;
-const server = app.listen(port);
-console.log("Webserver is running on http://localhost:" + port);
+// Serve static files from the 'public/dist' directory
+app.use(express.static(path.join(__dirname, 'public/dist')));
+
+// Route to serve the index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/dist', 'index.html'));
+});
+
+// Start the server
+const port = 3000;
+const host = '0.0.0.0'; // Listen on all network interfaces
+const server = app.listen(port, host, () => {
+  console.log(`Server is running on http://${host}:${port}`);
+  console.log("Accessible depuis d'autres appareils sur le réseau.");
+});
+
 
 // We will use the socket.io library to manage Websocket connections
 const io = require("socket.io")().listen(server);
@@ -38,6 +46,8 @@ function main() {
 
 main();
 
+
+// socket server pour gerer les connections
 function setupSocketServer() {
   // Set up each socket connection
   io.on("connection", (socket) => {
