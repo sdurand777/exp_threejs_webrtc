@@ -2,6 +2,7 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors'); // Importer le middleware CORS
+const msgpack = require('msgpack-lite');
 const app = express();
 
 // Activer les en-têtes CORS pour toutes les routes
@@ -78,6 +79,26 @@ function setupSocketServer() {
       }
     });
 
+
+    // db.find({}, (err, docs) => {
+    //   if (err) {
+    //     console.error("Erreur lors de la récupération des données :", err);
+    //     return;
+    //   }
+    //
+    //   // Pour chaque document, encoder les données avec msgpack
+    //   for (let i = 0; i < docs.length; i++) {
+    //     let doc = docs[i];
+    //
+    //     // Encoder les données avec msgpack
+    //     const encodedDoc = msgpack.encode(doc);
+    //
+    //     // Envoyer les données encodées via WebSocket
+    //     socket.emit("data", encodedDoc);
+    //   }
+    // });
+
+
     // tell everyone that a new user connected
     io.emit("peerConnection", socket.id);
 
@@ -91,8 +112,13 @@ function setupSocketServer() {
 
     // setup a generic ping-pong which can be used to share arbitrary info between peers
     socket.on("data", (data) => {
-      // insert data into the database
-      db.insert(data);
+      // // insert data into the database
+      // db.insert(data);
+
+      // Décoder les données avant de les insérer dans la base
+      const decodedData = msgpack.decode(new Uint8Array(data));
+      db.insert(decodedData); // Stocker l'objet JSON dans la base
+
 
       // then send it to all peers
       io.sockets.emit("data", data);

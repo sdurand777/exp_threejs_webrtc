@@ -12,6 +12,15 @@ import { PLYLoader } from 'three/addons/loaders/PLYLoader.js'
 import { Communications } from "./communications.js";
 import { FirstPersonControls } from "./libs/firstPersonControls.js";
 
+import msgpack from 'msgpack-lite';
+
+// load utils pour grpc-web
+const { SlamServiceClient } = require('./slam_service_grpc_web_pb.js');
+//const { Empty } = require('./pointcloud_pb.js');
+const { Empty } = require('google-protobuf/google/protobuf/empty_pb.js');
+
+
+
 // lerp value to be used when interpolating positions and rotations
 let lerpValue = 0;
 
@@ -53,10 +62,8 @@ function init() {
         console.log("Added Ply ....");
     });
 
-
-
     // Création d'une géométrie sphérique
-    const radius = 3; // Rayon de la sphère
+    const radius = 1; // Rayon de la sphère
     const widthSegments = 32; // Segments horizontaux (plus il y en a, plus c'est précis)
     const heightSegments = 32; // Segments verticaux
     const sphereGeometry = new THREE.SphereGeometry(radius, widthSegments, heightSegments);
@@ -75,17 +82,12 @@ function init() {
     // Ajout de la sphère à la scène
     scene.add(sphere);
 
-
-
-
-
-
-
-
   communications = new Communications();
 
   communications.on("peerJoined", (id) => {
     addPeer(id);
+    console.log(`Nouveau client connecté : ${id}`);
+
   });
   communications.on("peerLeft", (id) => {
     removePeer(id);
@@ -93,13 +95,35 @@ function init() {
   communications.on("positions", (positions) => {
     updatePeerPositions(positions);
   });
-  // deal with incoming data
-  communications.on("data", (msg) => {
-    console.log("Received message:", msg);
-    if (msg.type == "box") {
-      onNewBox(msg);
-    }
-  });
+
+  // // deal with incoming data
+  //   communications.on("data", (msg) => {
+  //       console.log("Received message:", msg);
+  //       if (msg.type == "box") {
+  //           onNewBox(msg);
+  //       } else if (msg.type === "points") {
+  //           onNewPoints(msg);
+  //       }
+  //   });
+
+
+    // communications.on("data", (encodedMsg) => {
+    //   console.log("Message brut reçu :", encodedMsg);
+    //
+    //   try {
+    //     //const msg = msgpack.decode(encodedMsg);
+    //     // Décoder les données reçues avec msgpack
+    //     const msg = msgpack.decode(new Uint8Array(encodedMsg));
+    //     console.log("Message décodé :", msg);
+    //     if (msg.type === "points") {
+    //       onNewPoints(msg);
+    //     }
+    //   } catch (err) {
+    //     console.error("Erreur lors du décodage des données :", err);
+    //   }
+    // });
+
+
 
   let width = window.innerWidth;
   let height = window.innerHeight * 0.9;
@@ -148,6 +172,114 @@ function init() {
 
 init();
 
+// streaming grpc web
+
+// Crée un client gRPC-Web
+const client = new SlamServiceClient('http://192.168.51.30:8080', null, null);
+
+// Appelle le serveur pour recevoir le flux de points
+const request = new Empty();
+
+const stream = client.getPointCloud(request, {});
+
+
+// stream.on('data', (response) => {
+//     const points = response.getPointsList();
+//     addAllPoints(points);  // Ajouter tous les points en une seule fois
+//     // points.forEach((point) => {
+//     //     const x = point.getX();
+//     //     const y = point.getY();
+//     //     const z = point.getZ();
+//     //     console.log(`Point reçu: x=${x}, y=${y}, z=${z}`);
+//     // });
+// });
+
+async function processStreamData(points) {
+    // Utilisation de setTimeout pour différer l'ajout des points à la scène
+    return new Promise(resolve => {
+        setTimeout(() => {
+            addAllPoints(points);
+            resolve();  // Résoudre la promesse après le traitement
+        }, 0);  // Délai de 0 pour passer après le cycle de rendu
+    });
+}
+
+stream.on('data', async (response) => {
+    const points = response.getPointsList();
+    await processStreamData(points);  // Attendez que les points soient ajoutés après le rendu
+});
+
+
+
+stream.on('error', (err) => {
+  console.error('Erreur du flux:', err.message);
+});
+
+stream.on('end', () => {
+  console.log('Flux terminé');
+});
+
+
+// Créer un tableau pour stocker les positions des points
+let pointsGeometry = new THREE.BufferGeometry();
+let pointsMaterial = new THREE.PointsMaterial({
+  color: 0xff0000,  // Rouge
+  size: 0.1,        // Taille des points
+  sizeAttenuation: true  // Appliquer une diminution de la taille selon la distance
+});
+
+let positions = [];  // Tableau global pour stocker les positions des points
+
+
+
+// Fonction pour ajouter des points en une seule fois
+function addAllPoints(pointsList) {
+    // Vider les positions existantes pour mettre à jour avec les nouvelles
+    //positions = [];
+
+    // Remplir le tableau de positions avec les coordonnées de tous les points
+    pointsList.forEach((point) => {
+        const x = point.getX();
+        const y = point.getY();
+        const z = point.getZ();
+        positions.push(x, y, z);
+    });
+
+    // Mettre à jour la géométrie en une seule fois avec toutes les positions
+    pointsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+    // Si les points n'ont pas encore été ajoutés à la scène, les ajouter
+    if (!scene.getObjectByName("points")) {
+        const points = new THREE.Points(pointsGeometry, pointsMaterial);
+        points.name = "points";  // Nommer l'objet pour le retrouver facilement
+        scene.add(points);
+    }
+
+    // // Envoyer les points via WebSocket
+    // const formattedPoints = pointsList.map(point => ({
+    //     x: point.getX(),
+    //     y: point.getY(),
+    //     z: point.getZ()
+    // }));
+
+    // communications.sendData({
+    //     type: "points",
+    //     data: formattedPoints
+    // });
+
+
+
+
+
+    // const compressedData = msgpack.encode({
+    //     type: "points",
+    //     data: formattedPoints,
+    // });
+    //
+    // communications.sendData(compressedData);
+
+}
+
 //////////////////////////////////////////////////////////////////////
 // Lighting 💡
 //////////////////////////////////////////////////////////////////////
@@ -190,6 +322,20 @@ function addPeer(id) {
 
     // add group to scene
     scene.add(group);
+
+    
+    // add existing points 
+    console.log("La longueur du tableau positions est :", positions.length);
+    // add existing points
+    pointsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+    // Si les points n'ont pas encore été ajoutés à la scène, les ajouter
+    if (!scene.getObjectByName("points")) {
+        const points = new THREE.Points(pointsGeometry, pointsMaterial);
+        points.name = "points";  // Nommer l'objet pour le retrouver facilement
+        scene.add(points);
+    }
+
 
     peers[id] = {};
     peers[id].group = group;
@@ -238,25 +384,6 @@ function interpolatePositions() {
     }
   }
 }
-
-// function updatePeerVolumes() {
-//   for (let id in peers) {
-//     let audioEl = document.getElementById(id + "_audio");
-//     if (audioEl && peers[id].group) {
-//       let distSquared = camera.position.distanceToSquared(
-//         peers[id].group.position
-//       );
-//
-//       if (distSquared > 500) {
-//         audioEl.volume = 0;
-//       } else {
-//         // from lucasio here: https://discourse.threejs.org/t/positionalaudio-setmediastreamsource-with-webrtc-question-not-hearing-any-sound/14301/29
-//         let volume = Math.min(1, 10 / distSquared);
-//         audioEl.volume = volume;
-//       }
-//     }
-//   }
-// }
 
 //////////////////////////////////////////////////////////////////////
 // Interaction 🤾‍♀️
@@ -332,3 +459,56 @@ function onNewBox(msg) {
 
   scene.add(mesh);
 }
+
+// pour afficher les points de la database gen par addAllpoint sur un nouveau client
+function onNewPoints(msg) {
+  const points = msg.data;
+
+  points.forEach(({ x, y, z }) => {
+    positions.push(x, y, z);
+  });
+
+  pointsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+
+  if (!scene.getObjectByName("points")) {
+    const pointsMesh = new THREE.Points(pointsGeometry, pointsMaterial);
+    pointsMesh.name = "points";
+    scene.add(pointsMesh);
+  }
+}
+
+// // Fonction pour gérer les nouveaux points
+// function onNewPoints(encodedMsg) {
+//   try {
+//     // Décoder les données encodées avec msgpack-lite
+//     const msg = msgpack.decode(encodedMsg);
+//
+//     // Vérifier que le type de message est "points"
+//     if (msg.type !== "points") {
+//       console.warn("Message ignoré : type inconnu", msg.type);
+//       return;
+//     }
+//
+//     const points = msg.data;
+//
+//     // Ajouter chaque point aux positions existantes
+//     points.forEach(({ x, y, z }) => {
+//       positions.push(x, y, z);
+//     });
+//
+//     // Mettre à jour les positions dans la géométrie
+//     pointsGeometry.setAttribute(
+//       "position",
+//       new THREE.Float32BufferAttribute(positions, 3)
+//     );
+//
+//     // Ajouter le maillage des points à la scène s'il n'existe pas déjà
+//     if (!scene.getObjectByName("points")) {
+//       const pointsMesh = new THREE.Points(pointsGeometry, pointsMaterial);
+//       pointsMesh.name = "points";
+//       scene.add(pointsMesh);
+//     }
+//   } catch (err) {
+//     console.error("Erreur lors du décodage des données :", err);
+//   }
+// }

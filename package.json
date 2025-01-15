@@ -9,6 +9,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.2",
+    "msgpack-lite": "^0.1.26",
     "nedb": "^1.8.0",
     "protoc-gen-js": "^3.21.4",
     "simple-peer": "^9.11.0",
