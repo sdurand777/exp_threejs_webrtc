@@ -10,4 +10,6 @@ sans webrtc on peut utiliser npm start pour tester le site 3D static ca ne gere 
 avec webrtc il faut build avec webpack npm run build puis lancer app avec npm run server
 
 
+# attention utilisation database
 
+generer le fichier database touch mydatabase.json pour utiliser le stockage de donnees entre les peers
